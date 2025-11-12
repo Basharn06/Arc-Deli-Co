@@ -2,6 +2,7 @@ package com.pluralsight;
 
 import com.pluralsight.models.*;
 import com.pluralsight.ui.UserInterface;
+import com.pluralsight.util.ReceiptWriter;   // <-- add import
 
 import java.util.List;
 
@@ -46,7 +47,7 @@ public class App {
                 case 1 -> { addSandwich(order); }
                 case 2 -> { addDrink(order); }
                 case 3 -> { addChips(order); }
-                case 4 -> { checkoutPreview(order); }
+                case 4 -> { checkout(order); }         // <-- now saves
                 case 0 -> { ui.warn("Order canceled."); ui.pause(); return; }
                 default -> { ui.warn("Invalid choice"); ui.pause(); }
             }
@@ -88,13 +89,16 @@ public class App {
         System.out.printf("Total: $%s%n", order.total());
     }
 
-    // checkout preview (no save yet)
-    private void checkoutPreview(Order order) {
+    // checkout (with confirm + save)
+    private void checkout(Order order) {
         if (order.isEmpty()) {                   // empty guard
             ui.warn("Order is empty. Add items first.");
             ui.pause();
             return;
         }
+
+        // rule note: if no sandwiches, chips/drink still allowed (already handled by !isEmpty)
+
         ui.clear();
         ui.header("Checkout");
         ui.line();
@@ -105,7 +109,15 @@ public class App {
         }
         System.out.println("TOTAL: $" + order.total());
         ui.line();
-        ui.info("Receipt save coming next…");    // placeholder
+        ui.option("1) Confirm");
+        ui.option("0) Cancel");
+        int pick = ui.pick("Choose:");
+        if (pick == 1) {
+            ReceiptWriter.saveReceipt(order);     // write file
+            ui.ok("Receipt saved to resources/receipts.");
+        } else {
+            ui.warn("Checkout canceled.");
+        }
         ui.pause();
     }
 }
