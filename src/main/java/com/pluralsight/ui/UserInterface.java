@@ -38,11 +38,30 @@ public class UserInterface {
     // ask text
     public String ask(String p) { System.out.print(p + " "); return in.nextLine().trim(); }
 
-    // ask int
+    // ask int (free-form)
     public int pick(String p) {
         System.out.print(p + " ");
         try { return Integer.parseInt(in.nextLine().trim()); }
         catch (Exception e) { return -1; }
+    }
+
+    // ask int (bounded)
+    public int pickInRange(String p, int min, int max) {
+        while (true) {
+            int v = pick(p);              // get value
+            if (v >= min && v <= max) return v;
+            warn("Pick " + min + "-" + max);
+        }
+    }
+
+    // ask yes/no
+    public boolean askYesNo(String p) {
+        while (true) {
+            String s = ask(p + " (y/n):").toLowerCase();
+            if (s.equals("y")) return true;
+            if (s.equals("n")) return false;
+            warn("Type y or n");
+        }
     }
 
     // pause wait
