@@ -1,6 +1,5 @@
 package com.pluralsight.ui;
 
-import java.util.List;
 import java.util.Scanner;
 
 // console ui
@@ -26,8 +25,8 @@ public class UserInterface {
     // menu option
     public void option(String t) { System.out.println("• " + t); }
 
-    // info msg
-    public void info(String m) { System.out.println("[i] " + m); }
+    // info msg (no [i])
+    public void info(String m) { System.out.println(m); }
 
     // warn msg
     public void warn(String m) { System.out.println("[!] " + m); }
@@ -38,17 +37,17 @@ public class UserInterface {
     // ask text
     public String ask(String p) { System.out.print(p + " "); return in.nextLine().trim(); }
 
-    // ask int (free-form)
+    // ask int
     public int pick(String p) {
         System.out.print(p + " ");
         try { return Integer.parseInt(in.nextLine().trim()); }
         catch (Exception e) { return -1; }
     }
 
-    // ask int (bounded)
+    // bounded int
     public int pickInRange(String p, int min, int max) {
         while (true) {
-            int v = pick(p);              // get value
+            int v = pick(p);
             if (v >= min && v <= max) return v;
             warn("Pick " + min + "-" + max);
         }

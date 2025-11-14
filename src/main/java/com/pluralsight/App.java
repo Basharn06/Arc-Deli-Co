@@ -52,21 +52,19 @@ public class App {
     }
 
     private void addSandwich(Order order) {
-        PricedItem s = SandwichBuilders.build(ui); // note: PricedItem
+        PricedItem s = SandwichBuilders.build(ui);
         order.addItem(s);
         ui.ok("Sandwich added.");
         ui.pause();
     }
-
     private void addDrink(Order order) {
-        PricedItem d = ExtrasBuilders.buildDrink(ui); // note: PricedItem
+        PricedItem d = ExtrasBuilders.buildDrink(ui);
         order.addItem(d);
         ui.ok("Drink added.");
         ui.pause();
     }
-
     private void addChips(Order order) {
-        PricedItem c = ExtrasBuilders.buildChips(ui); // note: PricedItem
+        PricedItem c = ExtrasBuilders.buildChips(ui);
         order.addItem(c);
         ui.ok("Chips added.");
         ui.pause();
@@ -84,6 +82,7 @@ public class App {
 
     private void checkout(Order order) {
         if (order.isEmpty()) { ui.warn("Order is empty."); ui.pause(); return; }
+
         ui.clear();
         ui.header("Checkout");
         ui.line();
@@ -93,10 +92,21 @@ public class App {
         }
         System.out.println("TOTAL: $" + Money.format(order.total()));
         ui.line();
-        String c = ui.ask("Confirm? (y/n):");
-        if (c.equalsIgnoreCase("y")) {
-            ReceiptWriter.saveReceipt(order);
-            ui.ok("Receipt saved to resources/receipts.");
+
+        // payment method
+        ui.info("Payment method:");
+        ui.option("1) Cash");
+        ui.option("2) Card");
+        int pm = ui.pick("Choose:");
+        String pay = (pm == 1) ? "Cash" : "Card";
+
+        // confirm
+        boolean confirm = ui.askYesNo("Confirm checkout?");
+        if (confirm) {
+            String orderNo = ReceiptWriter.saveReceipt(order, pay);
+            if (orderNo != null) {
+                ui.ok("Saved receipt #" + orderNo + " and logged to transactions.csv");
+            }
         } else {
             ui.warn("Checkout canceled.");
         }

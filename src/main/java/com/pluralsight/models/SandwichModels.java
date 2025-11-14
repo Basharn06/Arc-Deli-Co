@@ -7,8 +7,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /* ───────────  ENUMS / SUPPORT TYPES  ─────────── */
-
-// sandwich sizes
 enum Size {
     FOUR, EIGHT, TWELVE;
     String label() {
@@ -19,8 +17,6 @@ enum Size {
         };
     }
 }
-
-// bread options
 enum Bread {
     WHITE, WHEAT, RYE, WRAP;
     String label() {
@@ -32,15 +28,12 @@ enum Bread {
         };
     }
 }
-
-// topping category
 enum ToppingType { MEAT, CHEESE, REGULAR, SAUCE, SIDE }
 
-// topping model
 class Topping {
-    private final String name;      // topping name
-    private final ToppingType type; // category
-    private int qty = 1;            // 1=normal,2=extra
+    private final String name;
+    private final ToppingType type;
+    private int qty = 1;
 
     Topping(String name, ToppingType type) { this.name = name; this.type = type; }
     void makeExtra() { qty = 2; }
@@ -50,8 +43,6 @@ class Topping {
 }
 
 /* ───────────  SANDWICH + SIGNATURES  ─────────── */
-
-// base sandwich (package-private)
 class Sandwich implements PricedItem {
     protected Size size;
     protected Bread bread;
@@ -67,16 +58,19 @@ class Sandwich implements PricedItem {
     @Override public String title() { return size.label() + " " + bread.label() + " sandwich"; }
 
     @Override public BigDecimal price() {
-        BigDecimal total = PriceList.bread(size.label());
+        // map enum to PriceList keys ("4","8","12")  // size key
+        String key = switch (size) { case FOUR -> "4"; case EIGHT -> "8"; case TWELVE -> "12"; };
+
+        BigDecimal total = PriceList.bread(key);        // base bread price
         for (Topping t : tops) {
             switch (t.type()) {
                 case MEAT -> {
-                    total = total.add(PriceList.meat(size.label()));
-                    if (t.qty() > 1) total = total.add(PriceList.extraMeat(size.label()));
+                    total = total.add(PriceList.meat(key));
+                    if (t.qty() > 1) total = total.add(PriceList.extraMeat(key));
                 }
                 case CHEESE -> {
-                    total = total.add(PriceList.cheese(size.label()));
-                    if (t.qty() > 1) total = total.add(PriceList.extraCheese(size.label()));
+                    total = total.add(PriceList.cheese(key));
+                    if (t.qty() > 1) total = total.add(PriceList.extraCheese(key));
                 }
                 default -> { /* included */ }
             }
@@ -97,7 +91,6 @@ class Sandwich implements PricedItem {
     }
 }
 
-// signatures (package-private)
 class BLT extends Sandwich {
     BLT(Size s, Bread b, boolean t) {
         super(s, b, t);
@@ -109,7 +102,6 @@ class BLT extends Sandwich {
     }
     @Override public String title() { return "Signature: BLT (" + size.label() + ")"; }
 }
-
 class PhillyCheesesteak extends Sandwich {
     PhillyCheesesteak(Size s, Bread b, boolean t) {
         super(s, b, t);
@@ -120,7 +112,6 @@ class PhillyCheesesteak extends Sandwich {
     }
     @Override public String title() { return "Signature: Philly (" + size.label() + ")"; }
 }
-
 class RoastBeefMelt extends Sandwich {
     RoastBeefMelt(Size s, Bread b, boolean t) {
         super(s, b, t);
@@ -131,7 +122,6 @@ class RoastBeefMelt extends Sandwich {
     }
     @Override public String title() { return "Signature: Roast Beef Melt (" + size.label() + ")"; }
 }
-
 class VeggieDeluxe extends Sandwich {
     VeggieDeluxe(Size s, Bread b, boolean t) {
         super(s, b, t);
