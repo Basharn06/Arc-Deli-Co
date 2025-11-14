@@ -1,0 +1,27 @@
+Arc Deli & Co.
+Receipt
+=====================
+
+[8"] Toasted on wheat
+   - MEAT: steak (extra)
+   - MEAT: chicken
+   - CHEESE: american
+   - REGULAR: lettuce
+   - REGULAR: peppers
+   - REGULAR: tomatoes
+   - SAUCE: mayo
+   - SAUCE: ranch
+Subtotal: $0.00
+
+cola (SMALL)  $2.00
+BBQ chips  $1.50
+[12"] Toasted on white
+   - MEAT: bacon
+   - CHEESE: cheddar
+   - REGULAR: lettuce
+   - REGULAR: tomatoes
+   - SAUCE: ranch
+Subtotal: $0.00
+
+
+TOTAL: $3.50

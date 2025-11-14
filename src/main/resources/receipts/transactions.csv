@@ -1,0 +1,4 @@
+order_number,timestamp,total,payment_method,items
+20251113-175744,2025-11-13 17:57:44,20.15,Cash,"12"" wheat sandwich | coke (medium) | BBQ chips"
+20251113-175945,2025-11-13 17:59:45,3.00,Card,cola (large)
+20251114-010449,2025-11-14 01:04:49,15.00,Card,"Signature: Philly (8"") | coke (large) | BBQ chips"

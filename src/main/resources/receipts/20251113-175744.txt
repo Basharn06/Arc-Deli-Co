@@ -1,0 +1,23 @@
+Arc Deli & Co.
+Order #: 20251113-175744
+Date   : 2025-11-13 17:57:44
+Paid   : Cash
+=====================
+
+[12"] Classic on wheat
+   - MEAT: steak (extra)
+   - CHEESE: american (extra)
+   - REGULAR: lettuce
+   - REGULAR: onions
+   - REGULAR: peppers
+   - REGULAR: pickles
+   - SAUCE: mayo
+   - SAUCE: ketchup
+Subtotal: $16.15
+
+coke (MEDIUM)  $2.50
+BBQ chips  $1.50
+
+TOTAL: $20.15
+=====================
+Thank you!
