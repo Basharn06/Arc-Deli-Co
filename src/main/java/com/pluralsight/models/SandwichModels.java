@@ -1,137 +1,306 @@
 package com.pluralsight.models;
 
-import com.pluralsight.util.PriceList;
-
 import java.math.BigDecimal;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-/* ───────────  ENUMS / SUPPORT TYPES  ─────────── */
+// ------------ Size enum ------------
 enum Size {
-    FOUR, EIGHT, TWELVE;
-    String label() {
-        return switch (this) {
-            case FOUR -> "4\"";
-            case EIGHT -> "8\"";
-            case TWELVE -> "12\"";
-        };
-    }
-}
-enum Bread {
-    WHITE, WHEAT, RYE, WRAP;
-    String label() {
-        return switch (this) {
-            case WHITE -> "white";
-            case WHEAT -> "wheat";
-            case RYE -> "rye";
-            case WRAP -> "wrap";
-        };
-    }
-}
-enum ToppingType { MEAT, CHEESE, REGULAR, SAUCE, SIDE }
+    FOUR("4\"", 4),
+    EIGHT("8\"", 8),
+    TWELVE("12\"", 12);
 
+    private final String label;
+    private final int inches;
+
+    Size(String label, int inches) {
+        this.label = label;
+        this.inches = inches;
+    }
+
+    public String label() {
+        return label;
+    }
+
+    public int inches() {
+        return inches;
+    }
+
+    public static Size fromInt(int value) {
+        return switch (value) {
+            case 4 -> FOUR;
+            case 8 -> EIGHT;
+            case 12 -> TWELVE;
+            default -> throw new IllegalArgumentException("Invalid size: " + value);
+        };
+    }
+}
+
+// ------------ Bread enum ------------
+enum Bread {
+    WHITE("white"),
+    WHEAT("wheat"),
+    RYE("rye"),
+    WRAP("wrap");
+
+    private final String label;
+
+    Bread(String label) {
+        this.label = label;
+    }
+
+    public String label() {
+        return label;
+    }
+
+    public static Bread fromInt(int choice) {
+        return switch (choice) {
+            case 1 -> WHITE;
+            case 2 -> WHEAT;
+            case 3 -> RYE;
+            case 4 -> WRAP;
+            default -> throw new IllegalArgumentException("Invalid bread choice: " + choice);
+        };
+    }
+}
+
+// ------------ ToppingType enum ------------
+enum ToppingType {
+    MEAT,
+    CHEESE,
+    REGULAR,
+    SAUCE,
+    SIDE
+}
+
+// ------------ Topping class ------------
 class Topping {
     private final String name;
     private final ToppingType type;
-    private int qty = 1;
+    private final boolean extra;
 
-    Topping(String name, ToppingType type) { this.name = name; this.type = type; }
-    void makeExtra() { qty = 2; }
-    String name() { return name; }
-    ToppingType type() { return type; }
-    int qty() { return qty; }
-}
-
-/* ───────────  SANDWICH + SIGNATURES  ─────────── */
-class Sandwich implements PricedItem {
-    protected Size size;
-    protected Bread bread;
-    protected boolean toasted;
-    protected final List<Topping> tops = new ArrayList<>();
-
-    Sandwich(Size size, Bread bread, boolean toasted) {
-        this.size = size; this.bread = bread; this.toasted = toasted;
+    public Topping(String name, ToppingType type, boolean extra) {
+        this.name = name;
+        this.type = type;
+        this.extra = extra;
     }
 
-    void addTop(Topping t) { tops.add(t); }
+    public String getName() {
+        return name;
+    }
 
-    @Override public String title() { return size.label() + " " + bread.label() + " sandwich"; }
+    public ToppingType getType() {
+        return type;
+    }
 
-    @Override public BigDecimal price() {
-        // map enum to PriceList keys ("4","8","12")  // size key
-        String key = switch (size) { case FOUR -> "4"; case EIGHT -> "8"; case TWELVE -> "12"; };
+    public boolean isExtra() {
+        return extra;
+    }
+}
 
-        BigDecimal total = PriceList.bread(key);        // base bread price
-        for (Topping t : tops) {
-            switch (t.type()) {
-                case MEAT -> {
-                    total = total.add(PriceList.meat(key));
-                    if (t.qty() > 1) total = total.add(PriceList.extraMeat(key));
-                }
-                case CHEESE -> {
-                    total = total.add(PriceList.cheese(key));
-                    if (t.qty() > 1) total = total.add(PriceList.extraCheese(key));
-                }
-                default -> { /* included */ }
-            }
+// ------------ Sandwich base class (implements PricedItem) ------------
+class Sandwich implements PricedItem {
+
+    private final Size size;
+    private final Bread bread;
+    private final boolean toasted;
+    private final List<Topping> toppings = new ArrayList<>();
+
+    public Sandwich(Size size, Bread bread, boolean toasted) {
+        this.size = size;
+        this.bread = bread;
+        this.toasted = toasted;
+    }
+
+    // ----- configuration -----
+    public void addTopping(Topping topping) {
+        toppings.add(topping);
+    }
+
+    public List<Topping> getToppings() {
+        return Collections.unmodifiableList(toppings);
+    }
+
+    public Size getSize() {
+        return size;
+    }
+
+    public Bread getBread() {
+        return bread;
+    }
+
+    public boolean isToasted() {
+        return toasted;
+    }
+
+    // ----- PricedItem methods -----
+
+    @Override
+    public String title() {
+        return size.label() + " Classic on " + bread.label();
+    }
+
+    // total sandwich price (base + all toppings)
+    @Override
+    public BigDecimal price() {
+        BigDecimal total = basePrice(); // base price by size
+        for (Topping topping : toppings) {
+            total = total.add(toppingPrice(topping));
         }
         return total;
     }
 
-    @Override public String receiptLine() {
-        String tlines = tops.stream()
-                .map(t -> "   - " + t.type() + ": " + t.name() + (t.qty() > 1 ? " (extra)" : ""))
-                .collect(Collectors.joining("\n"));
-        return """
-               [%s] %s on %s
-               %s
-               Subtotal: $%s
-               """.formatted(size.label(), toasted ? "Toasted" : "Classic",
-                bread.label(), tlines, price());
+    @Override
+    public String receiptLine() {
+        StringBuilder sb = new StringBuilder();
+
+        // sandwich header
+        sb.append("[")
+                .append(size.label())
+                .append("] Classic on ")
+                .append(bread.label());
+        if (toasted) {
+            sb.append(" (toasted)");
+        }
+        sb.append("\n");
+
+        // topping lines with individual prices
+        for (Topping topping : toppings) {
+            String typeLabel = topping.getType().name() + ":"; // e.g. MEAT:
+            String nameLabel = topping.getName() + (topping.isExtra() ? " (extra)" : "");
+            String priceLabel = formatMoney(toppingPrice(topping));
+
+            sb.append(String.format("  - %-8s %-18s %6s%n",
+                    typeLabel,
+                    nameLabel,
+                    priceLabel));
+        }
+
+        // subtotal for this sandwich
+        sb.append(String.format("Subtotal: %s%n", formatMoney(price())));
+
+        return sb.toString();
+    }
+
+    // ----- pricing helpers -----
+
+    // base sandwich price by size (from your spec)
+    private BigDecimal basePrice() {
+        return switch (size) {
+            case FOUR -> new BigDecimal("5.50");
+            case EIGHT -> new BigDecimal("7.00");
+            case TWELVE -> new BigDecimal("8.50");
+        };
+    }
+
+    // price for a single topping based on type + size + extra flag
+    private BigDecimal toppingPrice(Topping topping) {
+        switch (topping.getType()) {
+            case MEAT -> {
+                if (topping.isExtra()) {
+                    return switch (size) {
+                        case FOUR -> new BigDecimal("0.50");
+                        case EIGHT -> new BigDecimal("1.00");
+                        case TWELVE -> new BigDecimal("1.50");
+                    };
+                } else {
+                    return switch (size) {
+                        case FOUR -> new BigDecimal("1.00");
+                        case EIGHT -> new BigDecimal("2.00");
+                        case TWELVE -> new BigDecimal("3.00");
+                    };
+                }
+            }
+            case CHEESE -> {
+                if (topping.isExtra()) {
+                    return switch (size) {
+                        case FOUR -> new BigDecimal("0.30");
+                        case EIGHT -> new BigDecimal("0.60");
+                        case TWELVE -> new BigDecimal("0.90");
+                    };
+                } else {
+                    return switch (size) {
+                        case FOUR -> new BigDecimal("0.75");
+                        case EIGHT -> new BigDecimal("1.50");
+                        case TWELVE -> new BigDecimal("2.25");
+                    };
+                }
+            }
+            case REGULAR, SAUCE, SIDE -> {
+                // regular toppings & sauces are free
+                return BigDecimal.ZERO;
+            }
+            default -> {
+                return BigDecimal.ZERO;
+            }
+        }
+    }
+
+    private String formatMoney(BigDecimal value) {
+        return String.format("$%.2f", value);
     }
 }
 
+// ------------ Signature sandwiches ------------
+
 class BLT extends Sandwich {
-    BLT(Size s, Bread b, boolean t) {
-        super(s, b, t);
-        addTop(new Topping("bacon", ToppingType.MEAT));
-        addTop(new Topping("cheddar", ToppingType.CHEESE));
-        addTop(new Topping("lettuce", ToppingType.REGULAR));
-        addTop(new Topping("tomatoes", ToppingType.REGULAR));
-        addTop(new Topping("ranch", ToppingType.SAUCE));
+    public BLT(Size size, Bread bread, boolean toasted) {
+        super(size, bread, toasted);
+        addTopping(new Topping("bacon", ToppingType.MEAT, false));
+        addTopping(new Topping("lettuce", ToppingType.REGULAR, false));
+        addTopping(new Topping("tomatoes", ToppingType.REGULAR, false));
+        addTopping(new Topping("mayo", ToppingType.SAUCE, false));
     }
-    @Override public String title() { return "Signature: BLT (" + size.label() + ")"; }
+
+    @Override
+    public String title() {
+        return getSize().label() + " BLT on " + getBread().label();
+    }
 }
+
 class PhillyCheesesteak extends Sandwich {
-    PhillyCheesesteak(Size s, Bread b, boolean t) {
-        super(s, b, t);
-        addTop(new Topping("steak", ToppingType.MEAT));
-        addTop(new Topping("american", ToppingType.CHEESE));
-        addTop(new Topping("peppers", ToppingType.REGULAR));
-        addTop(new Topping("mayo", ToppingType.SAUCE));
+    public PhillyCheesesteak(Size size, Bread bread, boolean toasted) {
+        super(size, bread, toasted);
+        addTopping(new Topping("steak", ToppingType.MEAT, false));
+        addTopping(new Topping("provolone", ToppingType.CHEESE, false));
+        addTopping(new Topping("onions", ToppingType.REGULAR, false));
+        addTopping(new Topping("peppers", ToppingType.REGULAR, false));
     }
-    @Override public String title() { return "Signature: Philly (" + size.label() + ")"; }
+
+    @Override
+    public String title() {
+        return getSize().label() + " Philly on " + getBread().label();
+    }
 }
+
 class RoastBeefMelt extends Sandwich {
-    RoastBeefMelt(Size s, Bread b, boolean t) {
-        super(s, b, t);
-        addTop(new Topping("roast beef", ToppingType.MEAT));
-        addTop(new Topping("swiss", ToppingType.CHEESE));
-        addTop(new Topping("onions", ToppingType.REGULAR));
-        addTop(new Topping("mustard", ToppingType.SAUCE));
+    public RoastBeefMelt(Size size, Bread bread, boolean toasted) {
+        super(size, bread, toasted);
+        addTopping(new Topping("roast beef", ToppingType.MEAT, false));
+        addTopping(new Topping("cheddar", ToppingType.CHEESE, false));
+        addTopping(new Topping("onions", ToppingType.REGULAR, false));
+        addTopping(new Topping("mustard", ToppingType.SAUCE, false));
     }
-    @Override public String title() { return "Signature: Roast Beef Melt (" + size.label() + ")"; }
+
+    @Override
+    public String title() {
+        return getSize().label() + " Roast Beef Melt on " + getBread().label();
+    }
 }
+
 class VeggieDeluxe extends Sandwich {
-    VeggieDeluxe(Size s, Bread b, boolean t) {
-        super(s, b, t);
-        addTop(new Topping("provolone", ToppingType.CHEESE));
-        addTop(new Topping("lettuce", ToppingType.REGULAR));
-        addTop(new Topping("tomatoes", ToppingType.REGULAR));
-        addTop(new Topping("cucumbers", ToppingType.REGULAR));
-        addTop(new Topping("pickles", ToppingType.REGULAR));
-        addTop(new Topping("mushrooms", ToppingType.REGULAR));
-        addTop(new Topping("vinaigrette", ToppingType.SAUCE));
+    public VeggieDeluxe(Size size, Bread bread, boolean toasted) {
+        super(size, bread, toasted);
+        addTopping(new Topping("lettuce", ToppingType.REGULAR, false));
+        addTopping(new Topping("tomatoes", ToppingType.REGULAR, false));
+        addTopping(new Topping("cucumbers", ToppingType.REGULAR, false));
+        addTopping(new Topping("peppers", ToppingType.REGULAR, false));
+        addTopping(new Topping("vinaigrette", ToppingType.SAUCE, false));
     }
-    @Override public String title() { return "Signature: Veggie Deluxe (" + size.label() + ")"; }
+
+    @Override
+    public String title() {
+        return getSize().label() + " Veggie Deluxe on " + getBread().label();
+    }
 }

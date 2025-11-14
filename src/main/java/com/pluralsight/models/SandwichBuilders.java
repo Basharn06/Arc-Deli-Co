@@ -89,18 +89,44 @@ public final class SandwichBuilders {
         loopCategory(ui,"Sides", sides, s, ToppingType.SIDE, false);
     }
 
-    private static void loopCategory(UserInterface ui, String label, Set<String> options,
-                                     Sandwich s, ToppingType type, boolean allowExtra) {
-        ui.line(); ui.info(label + " (type 'done' to finish)");
+    // loop toppings
+    static void loopCategory(UserInterface ui,
+                             String label,
+                             Set<String> options,
+                             Sandwich s,
+                             ToppingType type,
+                             boolean allowExtra) {
+
+        ui.line();
+        ui.info(label + " (type 'done' to finish)");
         ui.info(String.join(", ", options));
+        ui.line();
+
         while (true) {
             String pick = ui.ask("Add:");
             if (pick.equalsIgnoreCase("done")) break;
+
             String norm = pick.toLowerCase();
-            if (!options.contains(norm)) { ui.warn("Unknown. Try again."); continue; }
-            Topping t = new Topping(norm, type);
-            if (allowExtra && ui.ask("Extra? (y/n):").equalsIgnoreCase("y")) t.makeExtra();
-            s.addTop(t); ui.ok(pick + " added");
+            if (!options.contains(norm)) {
+                ui.warn("Unknown. Try again.");
+                continue;
+            }
+
+            // ask if this topping is extra
+            boolean isExtra = false;
+            if (allowExtra) {
+                String extraAns = ui.ask("Extra? (y/n):");
+                isExtra = extraAns.equalsIgnoreCase("y");
+            }
+
+            // build topping with extra flag
+            Topping t = new Topping(norm, type, isExtra);
+
+            // add to sandwich
+            s.addTopping(t);
+            ui.ok(pick + " added");
         }
     }
+
 }
+
