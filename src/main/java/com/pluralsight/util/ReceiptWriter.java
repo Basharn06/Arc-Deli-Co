@@ -8,70 +8,122 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Writes a human-readable receipt AND appends a CSV log of transactions.
- * Text file: src/main/resources/receipts/<orderNo>.txt
- * CSV file : src/main/resources/receipts/transactions.csv
- */
-public final class ReceiptWriter {
-    private ReceiptWriter() { }
+public class ReceiptWriter {
 
-    // save receipt + log
     public static String saveReceipt(Order order, String paymentMethod) {
         try {
-            Path dir = Path.of("src", "main", "resources", "receipts");
-            if (!Files.exists(dir)) Files.createDirectories(dir);
-
-            String ts = now("yyyyMMdd-HHmmss");        // order number
-            String humanTs = now("yyyy-MM-dd HH:mm:ss");
-
-            // TEXT RECEIPT
-            Path file = dir.resolve(ts + ".txt");
-            try (BufferedWriter out = Files.newBufferedWriter(file)) {
-                out.write(buildText(order, ts, humanTs, paymentMethod));
+            // 🔹 Save in project root folder: /receipts
+            Path dir = Paths.get("receipts");
+            if (!Files.exists(dir)) {
+                Files.createDirectories(dir);
             }
 
-            // CSV LOG (append)
+            // Debug print so you know exactly where receipts are saved
+            System.out.println("Saving receipts in: " + dir.toAbsolutePath());
+
+            // 🔹 Counter file
+            Path counterFile = dir.resolve("order_counter.txt");
+            int nextOrderNumber = readAndIncrementCounter(counterFile);
+
+            String orderLabel = "order#" + nextOrderNumber;
+            LocalDateTime now = LocalDateTime.now();
+
+            // ---------- Write receipt ----------
+            Path receiptFile = dir.resolve(orderLabel + ".txt");
+            try (BufferedWriter out = Files.newBufferedWriter(receiptFile)) {
+                out.write(buildReceipt(order, orderLabel, paymentMethod, now));
+            }
+
+            // ---------- Log to CSV ----------
             Path csv = dir.resolve("transactions.csv");
             boolean newFile = !Files.exists(csv);
-            try (BufferedWriter out = Files.newBufferedWriter(csv, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+
+            try (BufferedWriter out = Files.newBufferedWriter(
+                    csv,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND)) {
+
                 if (newFile) {
                     out.write("order_number,timestamp,total,payment_method,items\n");
                 }
+
                 String items = order.items().stream()
                         .map(PricedItem::title)
                         .collect(Collectors.joining(" | "));
-                out.write(String.format("%s,%s,%s,%s,%s%n",
-                        ts, humanTs, order.total(), paymentMethod, escapeCsv(items)));
+
+                String timestamp = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+                out.write(orderLabel + "," +
+                        timestamp + "," +
+                        order.total() + "," +
+                        paymentMethod + "," +
+                        escapeCsv(items) + "\n");
             }
 
-            return ts; // return order number
+            return orderLabel;
+
         } catch (IOException e) {
-            System.out.println("[!] Failed to write receipt: " + e.getMessage());
+            System.out.println("Error writing receipt: " + e.getMessage());
             return null;
         }
     }
 
-    private static String buildText(Order order, String orderNo, String humanTs, String pay) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Arc Deli & Co.\n");
-        sb.append("Order #: ").append(orderNo).append("\n");
-        sb.append("Date   : ").append(humanTs).append("\n");
-        sb.append("Paid   : ").append(pay).append("\n");
-        sb.append("=====================\n\n");
-        for (PricedItem it : order.items()) {
-            sb.append(it.receiptLine()).append("\n");
+    private static int readAndIncrementCounter(Path counterFile) throws IOException {
+        int current = 0;
+
+        if (Files.exists(counterFile)) {
+            List<String> lines = Files.readAllLines(counterFile);
+            if (!lines.isEmpty()) {
+                try {
+                    current = Integer.parseInt(lines.get(0).trim());
+                } catch (NumberFormatException ignored) {
+                    current = 0;
+                }
+            }
         }
-        sb.append("\nTOTAL: $").append(order.total()).append("\n");
-        sb.append("=====================\n");
-        sb.append("Thank you!\n");
-        return sb.toString();
+
+        int next = current + 1;
+
+        Files.writeString(
+                counterFile,
+                String.valueOf(next),
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING
+        );
+
+        return next;
     }
 
-    private static String now(String pattern) {
-        return LocalDateTime.now().format(DateTimeFormatter.ofPattern(pattern));
+    private static String buildReceipt(Order order, String orderLabel, String paymentMethod, LocalDateTime now) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("========================================\n");
+        sb.append("          ARC DELI & CO. RECEIPT\n");
+        sb.append("========================================\n");
+
+        sb.append("Order Number : ").append(orderLabel).append("\n");
+        sb.append("Date         : ").append(now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))).append("\n");
+        sb.append("Time         : ").append(now.format(DateTimeFormatter.ofPattern("hh:mm a"))).append("\n");
+        sb.append("Payment      : ").append(paymentMethod.toUpperCase()).append("\n");
+
+        sb.append("----------------------------------------\n");
+        sb.append("ITEMS\n");
+        sb.append("----------------------------------------\n");
+
+        for (PricedItem item : order.items()) {
+            sb.append(item.receiptLine()).append("\n");
+        }
+
+        sb.append("----------------------------------------\n");
+        sb.append(String.format("TOTAL                         $%.2f\n", order.total()));
+        sb.append("========================================\n");
+        sb.append("       THANK YOU FOR YOUR ORDER!\n");
+        sb.append("========================================\n");
+
+        return sb.toString();
     }
 
     private static String escapeCsv(String s) {
