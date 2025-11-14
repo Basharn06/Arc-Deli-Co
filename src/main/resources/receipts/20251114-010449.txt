@@ -1,0 +1,19 @@
+Arc Deli & Co.
+Order #: 20251114-010449
+Date   : 2025-11-14 01:04:49
+Paid   : Card
+=====================
+
+[8"] Toasted on wheat
+   - MEAT: steak
+   - CHEESE: american
+   - REGULAR: peppers
+   - SAUCE: mayo
+Subtotal: $10.50
+
+coke (LARGE)  $3.00
+BBQ chips  $1.50
+
+TOTAL: $15.00
+=====================
+Thank you!
